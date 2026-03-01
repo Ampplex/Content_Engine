@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+langchain-aws
+boto3
+langgraph
+pandas
+scikit-learn
+python-dotenv
