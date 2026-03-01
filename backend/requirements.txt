@@ -1,8 +1,7 @@
 fastapi
 uvicorn
 pydantic
-langchain-aws
-boto3
+langchain-google-genai
 langgraph
 pandas
 scikit-learn

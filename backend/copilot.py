@@ -1,11 +1,13 @@
 import pandas as pd
 import json
-from langchain_aws import ChatBedrock
+from langchain_google_genai import ChatGoogleGenerativeAI
+from config import GOOGLE_API_KEY, LLM_MODEL, LLM_TEMPERATURE, LLM_MAX_TOKENS
 
-llm = ChatBedrock(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    region_name="ap-south-1",
-    model_kwargs={"temperature": 0.7, "max_tokens": 4096},
+llm = ChatGoogleGenerativeAI(
+    model=LLM_MODEL,
+    temperature=LLM_TEMPERATURE,
+    max_tokens=LLM_MAX_TOKENS,
+    google_api_key=GOOGLE_API_KEY,
 )
 
 

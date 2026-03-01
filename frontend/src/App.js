@@ -82,12 +82,15 @@ export default function App() {
 
   // Generator State
   const [topic, setTopic] = useState('How AI agents are transforming Indian agriculture');
-  const [language, setLanguage] = useState('Hindi');
+  const [language, setLanguage] = useState('English');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(-1);
+  const [completedSteps, setCompletedSteps] = useState(new Set());
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+  const [partialScores, setPartialScores] = useState(null);
+  const [partialCritiques, setPartialCritiques] = useState(null);
 
   // Copilot State
   const [copilotData, setCopilotData] = useState(null);
@@ -97,20 +100,72 @@ export default function App() {
     setLoading(true);
     setResult(null);
     setError(null);
-    setActiveStep(0); // show first step as active (waiting)
+    setActiveStep(0);
+    setCompletedSteps(new Set());
+    setPartialScores(null);
+    setPartialCritiques(null);
+
     try {
       const response = await fetch('http://localhost:8000/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, target_language: language }),
       });
-      const data = await response.json();
-      if (data.error) {
-        setError(data.error);
-        setActiveStep(-1);
-      } else {
-        setResult(data);
-        setActiveStep(PIPELINE_STEPS.length); // all done only when we have real results
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line in buffer
+
+        let eventType = null;
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ') && eventType) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === 'node_done') {
+                const stepIdx = data.step;
+                setCompletedSteps(prev => new Set([...prev, stepIdx]));
+                // Set next step as active
+                setActiveStep(stepIdx + 1);
+              }
+
+              if (eventType === 'scores') {
+                setPartialScores(data);
+              }
+
+              if (eventType === 'critiques') {
+                setPartialCritiques(data.critiques);
+              }
+
+              if (eventType === 'complete') {
+                setResult(data);
+                setActiveStep(PIPELINE_STEPS.length);
+                // Mark all steps done
+                setCompletedSteps(new Set([0, 1, 2, 3, 4, 5, 6]));
+              }
+
+              if (eventType === 'error') {
+                setError(data.error);
+                setActiveStep(-1);
+              }
+            } catch (e) {
+              // ignore parse errors on partial data
+            }
+            eventType = null;
+          }
+        }
       }
     } catch (err) {
       console.error('API Error:', err);
@@ -143,21 +198,22 @@ export default function App() {
   };
 
   const getStepStatus = (index) => {
-    if (result) return 'done'; // only mark done when backend returned real data
-    if (loading && index === 0) return 'active'; // only first step pulses while waiting
+    if (completedSteps.has(index)) return 'done';
+    if (index === activeStep && loading) return 'active';
     return 'pending';
   };
 
   const getStepDetail = (index) => {
-    if (!result) return null;
+    const critiques = result?.critiques || partialCritiques;
+    const scores = result?.scores || partialScores;
     // Map critique results to the appropriate pipeline step
-    if (index === 2 && result.critiques?.[0]) return result.critiques[0];
-    if (index === 3 && result.critiques?.[1]) return result.critiques[1];
-    if (index === 4 && result.critiques?.[2]) return result.critiques[2];
-    if (index === 5 && result.scores) return `Final Score: ${(result.scores.final * 100).toFixed(1)}%`;
-    if (index === 6 && result.image_prompt) return result.image_prompt.slice(0, 120) + '...';
-    if (index === 0) return 'English draft generated successfully.';
-    if (index === 1) return `Localized to ${language} for Indian professionals.`;
+    if (index === 2 && critiques?.[0]) return critiques[0];
+    if (index === 3 && critiques?.[1]) return critiques[1];
+    if (index === 4 && critiques?.[2]) return critiques[2];
+    if (index === 5 && scores) return `Final Score: ${(scores.final * 100).toFixed(1)}%`;
+    if (index === 6 && (result?.image_prompt)) return result.image_prompt.slice(0, 120) + '...';
+    if (index === 0 && completedSteps.has(0)) return 'English draft generated successfully.';
+    if (index === 1 && completedSteps.has(1)) return `Localized to ${language} for Indian professionals.`;
     return null;
   };
 
@@ -301,7 +357,9 @@ export default function App() {
                   </div>
 
                   {/* Agent Critiques Detail */}
-                  {result?.critiques && (
+                  {(result?.critiques || partialCritiques) && (() => {
+                    const critiques = result?.critiques || partialCritiques;
+                    return (
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
                       <div className="px-5 py-4 border-b border-slate-100">
                         <h3 className="font-semibold text-sm text-slate-800 flex items-center gap-2">
@@ -310,7 +368,7 @@ export default function App() {
                         </h3>
                       </div>
                       <div className="p-4 space-y-3">
-                        {result.critiques.map((critique, i) => {
+                        {critiques.map((critique, i) => {
                           const icons = [Search, Shield, AlertTriangle];
                           const colors = ['text-blue-500', 'text-purple-500', 'text-amber-500'];
                           const bgColors = ['bg-blue-50', 'bg-purple-50', 'bg-amber-50'];
@@ -326,7 +384,8 @@ export default function App() {
                         })}
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* ── MIDDLE: Hybrid Scoring Math ──────────────────────── */}
@@ -343,11 +402,13 @@ export default function App() {
                     </div>
 
                     <div className="p-5 flex-grow">
-                      {result?.scores ? (
+                      {(result?.scores || partialScores) ? (() => {
+                        const scores = result?.scores || partialScores;
+                        return (
                         <>
-                          <ScoreBar label="ML Feature Predictor" score={result.scores.ml} color="bg-blue-500" weight="0.5" />
-                          <ScoreBar label="LLM Engagement Evaluator" score={result.scores.llm} color="bg-purple-500" weight="0.3" />
-                          <ScoreBar label="Heuristics Engine" score={result.scores.heuristic} color="bg-amber-500" weight="0.2" />
+                          <ScoreBar label="ML Feature Predictor" score={scores.ml} color="bg-blue-500" weight="0.5" />
+                          <ScoreBar label="LLM Engagement Evaluator" score={scores.llm} color="bg-purple-500" weight="0.3" />
+                          <ScoreBar label="Heuristics Engine" score={scores.heuristic} color="bg-amber-500" weight="0.2" />
 
                           {/* Divider */}
                           <div className="border-t border-dashed border-slate-200 my-6" />
@@ -362,21 +423,21 @@ export default function App() {
                                 <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" strokeWidth="8" />
                                 <circle
                                   cx="60" cy="60" r="50" fill="none"
-                                  stroke={result.scores.final >= 0.75 ? '#6366f1' : '#f59e0b'}
+                                  stroke={scores.final >= 0.75 ? '#6366f1' : '#f59e0b'}
                                   strokeWidth="8"
                                   strokeLinecap="round"
-                                  strokeDasharray={`${result.scores.final * 314} 314`}
+                                  strokeDasharray={`${scores.final * 314} 314`}
                                   transform="rotate(-90 60 60)"
                                   className="transition-all duration-1000"
                                 />
                               </svg>
                               <span className="absolute text-3xl font-black text-slate-900">
-                                {(result.scores.final * 100).toFixed(0)}
+                                {(scores.final * 100).toFixed(0)}
                               </span>
                             </div>
-                            <p className={`text-sm font-semibold mt-2 ${result.scores.final >= 0.75 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                              {result.scores.final >= 0.85 ? 'Excellent — Ready to publish' :
-                               result.scores.final >= 0.75 ? 'Good — Passed quality gate' :
+                            <p className={`text-sm font-semibold mt-2 ${scores.final >= 0.75 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {scores.final >= 0.85 ? 'Excellent — Ready to publish' :
+                               scores.final >= 0.75 ? 'Good — Passed quality gate' :
                                'Below threshold — Reflexion triggered'}
                             </p>
                           </div>
@@ -385,12 +446,13 @@ export default function App() {
                           <div className="mt-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Calculation</p>
                             <p className="text-xs text-slate-600 font-mono leading-loose">
-                              (0.5 × {(result.scores.ml * 100).toFixed(1)}) + (0.3 × {(result.scores.llm * 100).toFixed(1)}) + (0.2 × {(result.scores.heuristic * 100).toFixed(1)})<br />
-                              = <span className="font-bold text-indigo-600">{(result.scores.final * 100).toFixed(1)}</span>
+                              (0.5 × {(scores.ml * 100).toFixed(1)}) + (0.3 × {(scores.llm * 100).toFixed(1)}) + (0.2 × {(scores.heuristic * 100).toFixed(1)})<br />
+                              = <span className="font-bold text-indigo-600">{(scores.final * 100).toFixed(1)}</span>
                             </p>
                           </div>
                         </>
-                      ) : (
+                        );
+                      })() : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-3 py-12">
                           <BarChart3 className="w-12 h-12" />
                           <p className="text-sm font-medium">Scores will appear here</p>
