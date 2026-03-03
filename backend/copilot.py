@@ -1,13 +1,15 @@
 import pandas as pd
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
-from config import GOOGLE_API_KEY, LLM_MODEL, LLM_TEMPERATURE, LLM_MAX_TOKENS
+from bedrock_llm import ChatBedrockAPIKey
+from config import BEDROCK_API_KEY, BEDROCK_MODEL_ID, AWS_REGION, LLM_TEMPERATURE, LLM_MAX_TOKENS
+from ml_model import trend_predictor
 
-llm = ChatGoogleGenerativeAI(
-    model=LLM_MODEL,
+llm = ChatBedrockAPIKey(
+    api_key=BEDROCK_API_KEY,
+    model_id=BEDROCK_MODEL_ID,
+    region=AWS_REGION,
     temperature=LLM_TEMPERATURE,
     max_tokens=LLM_MAX_TOKENS,
-    google_api_key=GOOGLE_API_KEY,
 )
 
 
@@ -38,16 +40,24 @@ No markdown, no explanation."""
         ])
 
 
-def _generate_strategy(df: pd.DataFrame) -> str:
+def _generate_strategy(df: pd.DataFrame, ml_predictions: list = None) -> str:
     """Use LLM to analyze the trend data and produce a real strategic recommendation."""
     recent_data = df.to_dict(orient="records")
-    
+
+    ml_section = ""
+    if ml_predictions:
+        ml_section = f"""\n\nLightGBM ML Model Predictions (next 7 days):
+{json.dumps(ml_predictions, indent=2)}
+
+These are data-driven predictions from our trained LightGBM model. Incorporate them into your
+recommendation and note where ML predictions align with or diverge from your qualitative analysis."""
+
     prompt = f"""You are a LinkedIn Growth Strategist AI. Analyze the following 14-day engagement data
 for a B2B content creator targeting Indian professionals and provide a specific, actionable
 content strategy recommendation for the upcoming week.
 
 Data (last 14 days):
-{json.dumps(recent_data, indent=2)}
+{json.dumps(recent_data, indent=2)}{ml_section}
 
 Your analysis should include:
 1. What pattern you observe in the data (tone mix vs engagement)
@@ -67,9 +77,14 @@ def analyze_growth_data():
     # Ensure engagement_rate is numeric
     df['engagement_rate'] = pd.to_numeric(df['engagement_rate'], errors='coerce').fillna(3.0)
     
-    strategy = _generate_strategy(df)
+    # LightGBM: predict optimal content plan for the next 7 days
+    ml_predictions = trend_predictor.predict_week(df)
+    
+    # Feed ML predictions into the LLM strategy so it's ML-informed
+    strategy = _generate_strategy(df, ml_predictions)
     
     return {
         "strategy": strategy,
-        "recent_trend": df.to_dict(orient="records")
+        "recent_trend": df.to_dict(orient="records"),
+        "ml_predictions": ml_predictions,
     }

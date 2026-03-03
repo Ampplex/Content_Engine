@@ -4,6 +4,10 @@ __pycache__/
 venv/
 .env
 
+# Secrets / test files with keys
+backend/test_bedrock_apikey.py
+backend/test_bedrock.py
+
 # Node
 node_modules/
 frontend/build/
