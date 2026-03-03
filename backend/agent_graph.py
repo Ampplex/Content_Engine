@@ -7,6 +7,7 @@ from bedrock_llm import ChatBedrockAPIKey
 from config import BEDROCK_API_KEY, BEDROCK_MODEL_ID, AWS_REGION, LLM_TEMPERATURE, LLM_MAX_TOKENS
 from ml_model import post_predictor
 from web_search import search_multiple
+from image_gen import generate_post_image, get_fallback_image_url
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("agent_graph")
@@ -28,6 +29,7 @@ class PostState(TypedDict):
     hybrid_score: dict
     iteration: int
     image_prompt: str
+    image_url: str
     search_queries: List[str]
     search_results: List[dict]
     trend_insights: str
@@ -500,10 +502,49 @@ def hybrid_scoring_engine(state: PostState):
 
 def visual_strategy_agent(state: PostState):
     logger.info(f"===== [NODE: visuals] Generating image prompt | Iteration: {state.get('iteration', 0)}")
-    prompt = f"Create a short, descriptive image generation prompt based on this text: {state['localized_draft']}"
+
+    draft = state['localized_draft']
+    hook = state.get('hook', '')
+
+    prompt = f"""You are an expert visual creative director for LinkedIn content.
+
+Given this LinkedIn post, craft a single, highly descriptive image generation prompt
+that will produce a stunning, scroll-stopping visual to accompany the post.
+
+POST HOOK: {hook}
+POST BODY: {draft[:600]}
+
+GUIDELINES for the image prompt:
+- Describe a SPECIFIC scene, not abstract concepts
+- Include: subject, setting, lighting, mood, color palette, camera angle
+- Use photographic/cinematic language (e.g. "soft golden hour lighting", "shallow depth of field", "top-down 45° angle")
+- Style: professional, modern, aspirational — suitable for LinkedIn
+- Aspect ratio should suit a wide LinkedIn banner (16:9)
+- NO text overlays in the image
+- NO people's faces (to avoid uncanny valley)
+- Keep the prompt under 120 words
+
+Return ONLY the image generation prompt, nothing else. No quotes, no explanation."""
+
     response = llm.invoke(prompt)
-    logger.info(f"===== [NODE: visuals] Done. Prompt: {response.content[:80]}...")
-    return {"image_prompt": response.content}
+    image_prompt = response.content.strip().strip('"').strip("'")
+    logger.info(f"===== [NODE: visuals] Image prompt: {image_prompt[:100]}...")
+
+    # Generate image using AWS Bedrock (Titan v2 primary, Stability AI fallback)
+    logger.info("  -> Calling AWS Bedrock image generation...")
+    gen_result = generate_post_image(image_prompt)
+
+    if "error" in gen_result:
+        # Fallback to Pollinations.ai if all Bedrock models fail
+        logger.warning(f"  -> Bedrock failed ({gen_result['error']}), falling back to Pollinations.ai")
+        image_url = get_fallback_image_url(image_prompt)
+    else:
+        # Serve from local static path
+        image_url = f"/generated_images/{gen_result['filename']}"
+        logger.info(f"  -> Image generated: {image_url}")
+
+    logger.info(f"===== [NODE: visuals] Done.")
+    return {"image_prompt": image_prompt, "image_url": image_url}
 
 # Compile Graph
 workflow = StateGraph(PostState)

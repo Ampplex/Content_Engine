@@ -8,6 +8,9 @@ venv/
 backend/test_bedrock_apikey.py
 backend/test_bedrock.py
 
+# Generated images (runtime artifact)
+backend/generated_images/
+
 # Node
 node_modules/
 frontend/build/

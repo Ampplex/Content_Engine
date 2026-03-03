@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.responses import StreamingResponse
 from pydantic import BaseModel
 from agent_graph import app_graph
@@ -8,10 +9,16 @@ from copilot import analyze_growth_data
 import traceback
 import json
 import logging
+from pathlib import Path
 
 logger = logging.getLogger("api")
 
 app = FastAPI()
+
+# Serve generated images as static files
+images_dir = Path(__file__).parent / "generated_images"
+images_dir.mkdir(exist_ok=True)
+app.mount("/generated_images", StaticFiles(directory=str(images_dir)), name="generated_images")
 
 # Enable CORS for React Frontend
 app.add_middleware(
@@ -101,7 +108,10 @@ async def generate_post(req: PostRequest):
                         })
 
             # Final result
-            image_url = f"https://image.pollinations.ai/prompt/{final_state.get('image_prompt', '').replace(' ', '%20')}?width=600&height=400&nologo=true"
+            image_url = final_state.get('image_url', '')
+            if not image_url:
+                # Fallback if image_url not set
+                image_url = f"https://image.pollinations.ai/prompt/{final_state.get('image_prompt', '').replace(' ', '%20')}?width=600&height=400&nologo=true"
 
             yield _sse_event("complete", {
                 "final_post": final_state.get("localized_draft", ""),
@@ -177,7 +187,9 @@ async def refine_post(req: RefineRequest):
                             "iteration": iteration,
                         })
 
-            image_url = f"https://image.pollinations.ai/prompt/{final_state.get('image_prompt', '').replace(' ', '%20')}?width=600&height=400&nologo=true"
+            image_url = final_state.get('image_url', '')
+            if not image_url:
+                image_url = f"https://image.pollinations.ai/prompt/{final_state.get('image_prompt', '').replace(' ', '%20')}?width=600&height=400&nologo=true"
 
             yield _sse_event("complete", {
                 "final_post": final_state.get("localized_draft", ""),

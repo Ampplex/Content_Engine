@@ -14,3 +14,6 @@ LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "4096"))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
+
+# ─── Google GenAI (Imagen 3.0) ────────────────────────────────────────────────
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")

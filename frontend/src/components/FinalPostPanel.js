@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CheckCircle, Sparkles, Globe2, RefreshCw, Copy } from 'lucide-react';
+import { API_BASE } from '../constants/pipeline';
 
 /**
  * Right column: Final localized post output with hook, markdown body,
@@ -51,7 +52,7 @@ export default function FinalPostPanel({ result, loading, language, onRefine, on
               {/* Generated Image */}
               <div className="relative rounded-xl overflow-hidden border border-slate-100 mb-4">
                 <img
-                  src={result.image_url}
+                  src={result.image_url?.startsWith('/') ? `${API_BASE}${result.image_url}` : result.image_url}
                   alt="AI Generated Visual"
                   className="w-full h-48 object-cover"
                   onError={(e) => { e.target.style.display = 'none'; }}
