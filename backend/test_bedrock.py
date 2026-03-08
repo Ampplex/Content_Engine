@@ -34,12 +34,22 @@ for mid in models:
 # Also test langchain ChatBedrock with the model that works
 print('\n--- LangChain ChatBedrock Test ---')
 from langchain_aws import ChatBedrock
-llm = ChatBedrock(
-    model_id='anthropic.claude-3-haiku-20240307-v1:0',
-    region_name='us-east-1',
-    credentials_profile_name=None,
-    model_kwargs={'temperature': 0.7, 'max_tokens': 20},
-)
+
+try:
+    # Newer langchain-aws expects `model`
+    llm = ChatBedrock(
+        model="anthropic.claude-3-haiku-20240307-v1:0",
+        region_name="us-east-1",
+        model_kwargs={"temperature": 0.7, "max_tokens": 20},
+    )
+except TypeError:
+    # Backward compatibility for older versions expecting `model_id`
+    llm = ChatBedrock(
+        model_id="anthropic.claude-3-haiku-20240307-v1:0",
+        region_name="us-east-1",
+        model_kwargs={"temperature": 0.7, "max_tokens": 20},
+    )
+
 try:
     r = llm.invoke('Say hello in one word')
     print(f'OK  ChatBedrock: {r.content}')

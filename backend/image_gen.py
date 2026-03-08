@@ -12,10 +12,19 @@ import uuid
 import json
 import base64
 import logging
-import boto3
 from pathlib import Path
+from urllib.parse import quote
+from dotenv import load_dotenv
+
+try:
+    import boto3
+except ModuleNotFoundError:
+    boto3 = None
 
 logger = logging.getLogger("image_gen")
+
+# Ensure .env credentials are available even when this module is called directly.
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 # ── Configuration ──────────────────────────────────────────────────────────
 GENERATED_IMAGES_DIR = Path(__file__).parent / "generated_images"
@@ -78,6 +87,21 @@ MODELS = [
     },
 ]
 
+def _normalize_prompt(prompt: str) -> str:
+    """Normalize whitespace for model payloads."""
+    return " ".join((prompt or "").split()).strip()
+
+def _truncate_prompt(prompt: str, max_len: int) -> str:
+    """Truncate prompt to provider max length while preserving whole words when possible."""
+    prompt = _normalize_prompt(prompt)
+    if len(prompt) <= max_len:
+        return prompt
+    cut = prompt[:max_len]
+    last_space = cut.rfind(" ")
+    if last_space > max_len * 0.7:
+        cut = cut[:last_space]
+    return cut.strip()
+
 
 def generate_post_image(prompt: str) -> dict:
     """
@@ -93,12 +117,18 @@ def generate_post_image(prompt: str) -> dict:
         dict with 'filename' and 'filepath' on success,
         or 'error' key on failure.
     """
-    bedrock = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=AWS_REGION,
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+    if boto3 is None:
+        return {"error": "boto3 is not installed"}
+
+    client_kwargs = {
+        "service_name": "bedrock-runtime",
+        "region_name": AWS_REGION,
+    }
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        client_kwargs["aws_access_key_id"] = AWS_ACCESS_KEY_ID
+        client_kwargs["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
+
+    bedrock = boto3.client(**client_kwargs)
 
     filename = f"{uuid.uuid4().hex}.png"
     filepath = GENERATED_IMAGES_DIR / filename
@@ -109,7 +139,9 @@ def generate_post_image(prompt: str) -> dict:
         try:
             logger.info(f"Trying {model['name']} ({model['id']}) | Prompt: {prompt[:80]}...")
 
-            payload = model["payload_fn"](prompt)
+            # Titan enforces a strict 512-char limit for text prompt.
+            model_prompt = _truncate_prompt(prompt, 512) if model["id"].startswith("amazon.titan-image-generator") else _normalize_prompt(prompt)
+            payload = model["payload_fn"](model_prompt)
 
             response = bedrock.invoke_model(
                 body=json.dumps(payload),
@@ -138,7 +170,7 @@ def generate_post_image(prompt: str) -> dict:
 
 def get_fallback_image_url(prompt: str) -> str:
     """Fallback to Pollinations.ai if Stability AI fails."""
-    encoded = prompt.replace(" ", "%20")
+    encoded = quote(_truncate_prompt(prompt, 600), safe="")
     return f"https://image.pollinations.ai/prompt/{encoded}?width=600&height=400&nologo=true"
 
 if __name__ == "__main__":

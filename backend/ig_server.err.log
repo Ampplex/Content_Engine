@@ -1,0 +1,5 @@
+2026-03-07 12:28:03,220 [INFO] [IG Scheduler] Model trained with LightGBM.
+INFO:     Started server process [20800]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)

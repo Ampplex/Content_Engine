@@ -1,208 +1,196 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, Zap, AlertTriangle, Search } from 'lucide-react';
+import { Loader2, Zap, AlertTriangle } from 'lucide-react';
 
 import { LANGUAGES, API_BASE } from './constants/pipeline';
+import { IG_API_BASE, IG_LANGUAGES, IG_FORMAT_COLORS, IG_TONE_COLORS } from './constants/ig_pipeline';
 import { usePipeline } from './hooks/usePipeline';
+import { useIGPipeline } from './hooks/useIGPipeline';
+
 import Header from './components/Header';
 import AgentWorkflow from './components/AgentWorkflow';
 import ScoringPanel from './components/ScoringPanel';
 import FinalPostPanel from './components/FinalPostPanel';
 import GrowthCopilot from './components/GrowthCopilot';
+import IGWorkflow from './components/IGWorkflow';
+import IGScoringPanel from './components/IGScoringPanel';
+import IGOutputPanel from './components/IGOutputPanel';
+import IGCopilot from './components/IGCopilot';
+import IGScheduler from './components/IGScheduler';
+import IGCompetitor from './components/IGCompetitor';
 
-// ─── Main Application ─────────────────────────────────────────────────────────
 export default function App() {
+  const [platform, setPlatform] = useState('linkedin');
   const [tab, setTab] = useState('generator');
   const [topic, setTopic] = useState('');
   const [language, setLanguage] = useState('English');
-
-  // Pipeline hook
-  const {
-    result, loading, error, partialScores, partialCritiques,
-    currentIteration, reflexionHistory, searchData,
-    handleGenerate: generate, handleRefine: refine,
-    getStepStatus, getStepDetail, setError,
-  } = usePipeline();
-
-  // Copilot State
-  const [copilotData, setCopilotData] = useState(null);
-  const [copilotLoading, setCopilotLoading] = useState(false);
-
-  const onGenerate = () => generate(topic, language);
-  const onRefine = () => refine(topic, language);
-
-  // Convert text to Unicode Bold (Sans-Serif Bold) for LinkedIn compatibility
-  const toUnicodeBold = (text) =>
-    [...text].map((ch) => {
-      const code = ch.charCodeAt(0);
-      if (code >= 65 && code <= 90)  return String.fromCodePoint(0x1D5D4 + code - 65);  // A-Z
-      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D5EE + code - 97);  // a-z
-      if (code >= 48 && code <= 57)  return String.fromCodePoint(0x1D7EC + code - 48);  // 0-9
-      return ch;
-    }).join('');
-
-  // Convert text to Unicode Italic (Sans-Serif Italic) for LinkedIn compatibility
-  const toUnicodeItalic = (text) =>
-    [...text].map((ch) => {
-      const code = ch.charCodeAt(0);
-      if (code >= 65 && code <= 90)  return String.fromCodePoint(0x1D608 + code - 65);  // A-Z
-      if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D622 + code - 97);  // a-z
-      return ch;
-    }).join('');
-
-  // Convert markdown to LinkedIn-friendly Unicode text
-  const toLinkedInText = (md) =>
-    md
-      .replace(/^#{1,6}\s+(.+)/gm, (_, t) => toUnicodeBold(t)) // headers → bold
-      .replace(/\*\*(.+?)\*\*/g, (_, t) => toUnicodeBold(t))   // **bold** → 𝗯𝗼𝗹𝗱
-      .replace(/__(.+?)__/g, (_, t) => toUnicodeBold(t))        // __bold__ → 𝗯𝗼𝗹𝗱
-      .replace(/\*(.+?)\*/g, (_, t) => toUnicodeItalic(t))      // *italic* → 𝘪𝘵𝘢𝘭𝘪𝘤
-      .replace(/_(.+?)_/g, (_, t) => toUnicodeItalic(t))        // _italic_ → 𝘪𝘵𝘢𝘭𝘪𝘤
-      .replace(/~~(.+?)~~/g, '$1')        // strikethrough → plain
-      .replace(/`(.+?)`/g, '$1')          // inline code → plain
-      .replace(/^\s*[-*+]\s+/gm, '• ')   // unordered lists → bullet
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // links: [text](url) → text
-
-  const handleCopy = () => {
-    let body = result?.final_post || '';
-    if (result?.hook) {
-      body = body.replace(result.hook, '').replace(`**${result.hook}**`, '').replace(/^\s*\n/, '');
-    }
-    const text = result?.hook ? toUnicodeBold(result.hook) + '\n\n' + body : body;
-    navigator.clipboard.writeText(toLinkedInText(text));
-  };
-
-  const fetchCopilot = useCallback(async () => {
-    setCopilotLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/copilot`);
-      const data = await response.json();
-      if (!response.ok || data.error) {
-        setError(data.error || 'Copilot API request failed');
-      } else {
-        setCopilotData(data);
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Copilot API Error:', err);
-      setError('Failed to connect to Copilot API');
-    }
-    setCopilotLoading(false);
-  }, [setError]);
+  const [theme, setTheme] = useState(localStorage.getItem('ui_theme') || 'dark');
 
   useEffect(() => {
-    if (tab === 'copilot' && !copilotData) fetchCopilot();
-  }, [tab, copilotData, fetchCopilot]);
+    localStorage.setItem('ui_theme', theme);
+  }, [theme]);
+
+  const li = usePipeline();
+  const ig = useIGPipeline();
+
+  const [copilotData, setCopilotData] = useState(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [igCopilotData, setIGCopilotData] = useState(null);
+  const [igCopilotLoading, setIGCopilotLoading] = useState(false);
+
+  const handlePlatformChange = (p) => {
+    setPlatform(p);
+    setTab(p === 'instagram' ? 'ig_generator' : 'generator');
+    setTopic('');
+  };
+
+  const fetchLICopilot = useCallback(async () => {
+    setCopilotLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/copilot`);
+      const data = await res.json();
+      if (!res.ok || data.error) li.setError(data.error || 'Copilot failed');
+      else {
+        setCopilotData(data);
+        li.setError(null);
+      }
+    } catch {
+      li.setError('Failed to connect to LinkedIn backend.');
+    }
+    setCopilotLoading(false);
+  }, [li]);
+
+  const fetchIGCopilot = useCallback(async () => {
+    setIGCopilotLoading(true);
+    try {
+      const res = await fetch(`${IG_API_BASE}/api/ig/copilot`);
+      const data = await res.json();
+      if (data.error) ig.setError(data.error);
+      else {
+        setIGCopilotData(data);
+        ig.setError(null);
+      }
+    } catch {
+      ig.setError('Failed to connect to Instagram API.');
+    }
+    setIGCopilotLoading(false);
+  }, [ig]);
+
+  useEffect(() => {
+    if (tab === 'copilot' && !copilotData) fetchLICopilot();
+    if (tab === 'ig_copilot' && !igCopilotData) fetchIGCopilot();
+  }, [tab, copilotData, igCopilotData, fetchLICopilot, fetchIGCopilot]);
+
+  const handleLICopy = () => {
+    const text = li.result?.hook
+      ? `${li.result.hook}\n\n${(li.result.final_post || '').replace(li.result.hook, '').replace(`**${li.result.hook}**`, '')}`
+      : (li.result?.final_post || '');
+    navigator.clipboard.writeText(text);
+  };
+
+  const handleIGCopy = () => {
+    if (!ig.result) return;
+    const full = [
+      ig.result.hook ? `${ig.result.hook}\n\n` : '',
+      ig.result.caption || '',
+      ig.result.hashtags?.caption_block || '',
+    ].join('');
+    navigator.clipboard.writeText(full);
+  };
+
+  const isDark = theme === 'dark';
 
   return (
-    <div className="min-h-screen text-slate-100 font-sans relative overflow-hidden bg-[#030313]">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(168,85,247,0.25) 0%, transparent 35%), radial-gradient(circle at 80% 15%, rgba(59,130,246,0.22) 0%, transparent 30%), radial-gradient(circle at 70% 80%, rgba(217,70,239,0.22) 0%, transparent 38%)' }} />
-        <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.55) 0.8px, transparent 0.8px)', backgroundSize: '3px 3px' }} />
-      </div>
+    <div className={`min-h-screen font-sans transition-colors duration-300 ${isDark ? 'bg-[#030313] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      <Header
+        tab={tab}
+        onTabChange={setTab}
+        platform={platform}
+        onPlatformChange={handlePlatformChange}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+      />
 
-      {tab === 'copilot' && <Header tab={tab} onTabChange={setTab} />}
-
-      <main className="max-w-[1600px] mx-auto px-4 md:px-6 py-6 relative z-10">
-        {/* ═══ CONTENT ENGINE TAB ═══ */}
+      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
         {tab === 'generator' && (
-          <div className="space-y-6 rounded-[22px] border border-indigo-400/45 bg-[#070726]/80 backdrop-blur-xl p-4 md:p-5 shadow-[0_0_40px_rgba(139,92,246,0.28)]">
-            {/* Input Bar */}
-            <div className="bg-[#090a31]/80 p-2 rounded-2xl shadow-[0_0_30px_rgba(129,140,248,0.28)] border border-indigo-400/45 flex flex-col md:flex-row gap-2 md:gap-3 items-stretch md:items-center">
-              <button
-                onClick={() => setTab('copilot')}
-                className="hidden md:inline-flex items-center justify-center w-10 h-10 rounded-xl border border-indigo-300/35 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25"
-                title="Open Growth Copilot"
-              >
-                <Zap className="w-4 h-4" />
-              </button>
-              <div className="flex-grow relative">
-                <Search className="w-4 h-4 text-indigo-200/70 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  className="w-full border border-indigo-400/50 p-3.5 pl-11 pr-4 rounded-xl bg-[#0a0b3a]/85 text-xl font-medium text-slate-100 placeholder:text-indigo-200/65 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/45 focus:border-fuchsia-300 transition"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="what’s new in AI today?"
-                  onKeyDown={(e) => e.key === 'Enter' && !loading && onGenerate()}
-                />
-              </div>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="border border-indigo-400/45 p-3.5 rounded-xl bg-[#0a0b3a]/85 text-lg font-medium text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40 focus:border-fuchsia-300 transition min-w-[140px]"
-              >
+          <>
+            <div className={`p-4 rounded-2xl border flex gap-3 items-center ${isDark ? 'bg-[#090a31]/80 border-indigo-400/45' : 'bg-white border-slate-200/70'}`}>
+              <input
+                className={`flex-grow p-3.5 rounded-xl border text-sm font-medium focus:outline-none ${isDark ? 'bg-[#0a0b3a]/85 border-indigo-400/50 text-slate-100 placeholder:text-indigo-200/65' : 'bg-slate-50/50 border-slate-200 placeholder:text-slate-400'}`}
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Enter topic..."
+                onKeyDown={(e) => e.key === 'Enter' && !li.loading && li.handleGenerate(topic, language)}
+              />
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={`p-3.5 rounded-xl border text-sm ${isDark ? 'bg-[#0a0b3a]/85 border-indigo-400/45' : 'bg-slate-50/50 border-slate-200'}`}>
                 {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
               </select>
               <button
-                onClick={onGenerate}
-                disabled={loading || !topic.trim()}
-                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 disabled:from-slate-500 disabled:to-slate-600 text-white px-7 py-3.5 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(217,70,239,0.55)] disabled:shadow-none"
+                onClick={() => li.handleGenerate(topic, language)}
+                disabled={li.loading || !topic.trim()}
+                className={`px-7 py-3.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition ${isDark ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'} disabled:opacity-60`}
               >
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Orchestrating...</> : <><Zap className="w-4 h-4" /> Orchestrate Content</>}
+                {li.loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Orchestrating…</> : <><Zap className="w-4 h-4" /> Orchestrate</>}
               </button>
             </div>
 
-            {/* Error Banner */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-300/40 rounded-2xl p-5 flex items-start gap-3 backdrop-blur-sm">
-                <AlertTriangle className="w-5 h-5 text-red-300 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-red-200">Pipeline Error</p>
-                  <p className="text-sm text-red-100/90 mt-1">{error}</p>
-                </div>
+            {li.error && (
+              <div className={`${isDark ? 'bg-red-500/10 border-red-300/40 text-red-100' : 'bg-red-50 border-red-200 text-red-700'} border rounded-2xl p-5 flex items-start gap-3`}>
+                <AlertTriangle className="w-5 h-5 mt-0.5" />
+                <p className="text-sm">{li.error}</p>
               </div>
             )}
 
-            {/* Three-Column Layout */}
-            {(loading || result) && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <AgentWorkflow
-                  loading={loading} result={result}
-                  currentIteration={currentIteration} reflexionHistory={reflexionHistory}
-                  searchData={searchData} partialCritiques={partialCritiques}
-                  getStepStatus={getStepStatus} getStepDetail={getStepDetail}
-                  language={language}
-                />
-                <ScoringPanel result={result} partialScores={partialScores} />
-                <FinalPostPanel
-                  result={result} loading={loading} language={language}
-                  onRefine={onRefine} onCopy={handleCopy}
-                />
+            {(li.loading || li.result) ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <AgentWorkflow theme={theme} loading={li.loading} result={li.result} currentIteration={li.currentIteration} reflexionHistory={li.reflexionHistory} searchData={li.searchData} partialCritiques={li.partialCritiques} getStepStatus={li.getStepStatus} getStepDetail={li.getStepDetail} language={language} />
+                <ScoringPanel theme={theme} result={li.result} partialScores={li.partialScores} />
+                <FinalPostPanel theme={theme} result={li.result} loading={li.loading} language={language} onRefine={() => li.handleRefine(topic, language)} onCopy={handleLICopy} />
+              </div>
+            ) : (
+              <div className={`text-center py-20 rounded-2xl border ${isDark ? 'border-indigo-400/30 bg-slate-950/40' : 'border-slate-200 bg-white'}`}>
+                <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Multi-Agent Content Orchestration</h2>
               </div>
             )}
-
-            {/* Empty State */}
-            {!loading && !result && (
-              <div className="text-center py-16 md:py-20 rounded-2xl border border-indigo-400/30 bg-slate-950/40">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-fuchsia-500/30 mb-6 border border-indigo-300/50 shadow-[0_0_20px_rgba(129,140,248,0.45)]">
-                  <Zap className="w-10 h-10 text-indigo-200" />
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Multi-Agent Content Orchestration</h2>
-                <p className="text-sm text-indigo-100/80 max-w-xl mx-auto leading-relaxed">
-                  Enter a topic above. Our 7-agent LangGraph pipeline will draft, localize, critique,
-                  score, and optimize your LinkedIn post — all powered by Claude on AWS Bedrock.
-                </p>
-              </div>
-            )}
-          </div>
+          </>
         )}
 
-        {/* ═══ GROWTH COPILOT TAB ═══ */}
-        {tab === 'copilot' && (
-          <div className="max-w-5xl mx-auto space-y-6">
-            <GrowthCopilot
-              data={copilotData}
-              loading={copilotLoading}
-              error={error}
-              onRefresh={() => { setCopilotData(null); fetchCopilot(); }}
-              onRetry={() => { setError(null); fetchCopilot(); }}
-            />
-          </div>
+        {tab === 'copilot' && <GrowthCopilot theme={theme} data={copilotData} loading={copilotLoading} error={li.error} onRefresh={() => { setCopilotData(null); fetchLICopilot(); }} onRetry={() => { li.setError(null); fetchLICopilot(); }} />}
+
+        {tab === 'ig_generator' && (
+          <>
+            <div className={`${isDark ? 'bg-[#0b0a2f]/80 border-pink-300/30' : 'bg-white border-pink-100/80'} p-4 rounded-2xl shadow-sm border flex gap-3 items-center`}>
+              <input
+                className={`flex-grow border p-3.5 rounded-xl text-sm ${isDark ? 'bg-slate-900/60 border-slate-600 text-slate-100 placeholder:text-slate-400' : 'bg-slate-50/50 border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Instagram topic..."
+                onKeyDown={(e) => e.key === 'Enter' && !ig.loading && ig.handleGenerate(topic, language)}
+              />
+              <select value={language} onChange={(e) => setLanguage(e.target.value)} className={`border p-3.5 rounded-xl text-sm ${isDark ? 'bg-slate-900/60 border-slate-600 text-slate-100' : 'bg-slate-50/50 border-slate-200 text-slate-800'}`}>{IG_LANGUAGES.map((l) => <option key={l}>{l}</option>)}</select>
+              <button onClick={() => ig.handleGenerate(topic, language)} disabled={ig.loading || !topic.trim()} className="bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white px-7 py-3.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition">{ig.loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><Zap className="w-4 h-4" /> Create</>}</button>
+            </div>
+
+            {(ig.selectedFormat || ig.selectedTone) && (
+              <div className="flex items-center gap-2">
+                {ig.selectedFormat && <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${IG_FORMAT_COLORS[ig.selectedFormat] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>{ig.selectedFormat}</span>}
+                {ig.selectedTone && <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${IG_TONE_COLORS[ig.selectedTone] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>{ig.selectedTone}</span>}
+              </div>
+            )}
+
+            {(ig.loading || ig.result) && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <IGWorkflow loading={ig.loading} result={ig.result} currentIteration={ig.currentIteration} reflexionHistory={ig.reflexionHistory} searchData={ig.searchData} partialCritiques={ig.partialCritiques} getStepStatus={ig.getStepStatus} getStepDetail={ig.getStepDetail} hashtags={ig.hashtags} />
+                <IGScoringPanel result={ig.result} partialScores={ig.partialScores} />
+                <IGOutputPanel result={ig.result} loading={ig.loading} language={language} hashtags={ig.hashtags} onRefine={() => ig.handleRefine(topic, language)} onCopy={handleIGCopy} />
+              </div>
+            )}
+          </>
         )}
+
+        {tab === 'ig_copilot' && <IGCopilot data={igCopilotData} loading={igCopilotLoading} error={ig.error} onRefresh={() => { setIGCopilotData(null); fetchIGCopilot(); }} onRetry={() => { ig.setError(null); fetchIGCopilot(); }} />}
+        {tab === 'ig_scheduler' && <IGScheduler theme={theme} />}
+        {tab === 'ig_competitor' && <IGCompetitor />}
       </main>
-
-      <footer className="border-t border-indigo-400/20 mt-12 py-4 text-center text-xs text-indigo-100/60 relative z-10">
-        Content Engine • Multi-Agent Content Engine • Powered by AWS Bedrock + LangGraph
-      </footer>
     </div>
   );
 }
