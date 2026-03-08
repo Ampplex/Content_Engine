@@ -13,31 +13,24 @@ const CONFIDENCE_STYLE = {
   '⚠️ Average': 'bg-amber-50 border-amber-200 text-amber-600',
 };
 
-function SelectField({ label, value, onChange, options, isDark }) {
+function SelectField({ label, value, onChange, options }) {
   return (
     <div>
-      <label className={`block text-xs font-bold uppercase tracking-wide mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{label}</label>
+      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
       <div className="relative">
         <select
           value={value} onChange={e => onChange(e.target.value)}
-          className={`w-full appearance-none border rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-pink-400/30 focus:border-pink-400 pr-8 transition ${
-            isDark
-              ? 'bg-slate-900/70 border-slate-600 text-slate-100'
-              : 'bg-slate-50 border-slate-200 text-slate-800'
-          }`}
+          className="w-full appearance-none border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-400/30 focus:border-pink-400 pr-8 transition"
         >
-          {options.map(o => (
-            <option key={o} className="text-slate-900 bg-white">{o}</option>
-          ))}
+          {options.map(o => <option key={o}>{o}</option>)}
         </select>
-        <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDark ? 'text-slate-300' : 'text-slate-400'}`} />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
     </div>
   );
 }
 
-export default function IGScheduler({ theme = 'light' }) {
-  const isDark = theme === 'dark';
+export default function IGScheduler() {
   const [fmt,      setFmt]      = useState('Reel');
   const [tone,     setTone]     = useState('Educational');
   const [audience, setAudience] = useState('Gen Z');
@@ -71,7 +64,7 @@ export default function IGScheduler({ theme = 'light' }) {
   return (
     <div className="space-y-5">
       {/* Hero */}
-      <div className={`${isDark ? 'bg-[#0b0a2f]/80 text-slate-100 border-pink-300/30 shadow-[0_0_24px_rgba(236,72,153,0.18)]' : 'bg-white text-slate-900 border-slate-200 shadow-md'} rounded-2xl p-7 border`}>
+      <div className="bg-white text-slate-900 rounded-2xl p-7 border border-slate-200 shadow-sm">
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center">
@@ -79,25 +72,25 @@ export default function IGScheduler({ theme = 'light' }) {
             </div>
             <div>
               <h2 className="text-xl font-black">Instagram Scheduler</h2>
-              <p className={`${isDark ? 'text-slate-300' : 'text-slate-500'} text-sm mt-0.5`}>LightGBM model · IST timezone · Indian audience</p>
+              <p className="text-slate-500 text-sm mt-0.5">LightGBM model · IST timezone · Indian audience</p>
             </div>
           </div>
           {schedule && (
-            <div className={`${isDark ? 'bg-pink-500/15 border-pink-300/30' : 'bg-pink-50 border-pink-100'} rounded-xl px-4 py-2.5 text-right border`}>
-              <p className={`${isDark ? 'text-pink-200' : 'text-pink-600'} text-xs`}>Best slot</p>
+            <div className="bg-pink-50 rounded-xl px-4 py-2.5 text-right border border-pink-100">
+              <p className="text-xs text-pink-600">Best slot</p>
               <p className="text-lg font-black">{schedule.best_day}</p>
-              <p className={`${isDark ? 'text-pink-100' : 'text-pink-700'} text-sm font-semibold`}>{schedule.best_time}</p>
+              <p className="text-pink-700 text-sm font-semibold">{schedule.best_time}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Controls */}
-      <div className={`${isDark ? 'bg-[#0b0a2f]/80 border-pink-300/30 shadow-[0_0_20px_rgba(236,72,153,0.14)]' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-5`}>
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
-          <SelectField label="Format"   value={fmt}      onChange={setFmt}      options={IG_FORMATS} isDark={isDark} />
-          <SelectField label="Tone"     value={tone}     onChange={setTone}     options={IG_TONES} isDark={isDark} />
-          <SelectField label="Audience" value={audience} onChange={setAudience} options={IG_AUDIENCES} isDark={isDark} />
+          <SelectField label="Format"   value={fmt}      onChange={setFmt}      options={IG_FORMATS} />
+          <SelectField label="Tone"     value={tone}     onChange={setTone}     options={IG_TONES} />
+          <SelectField label="Audience" value={audience} onChange={setAudience} options={IG_AUDIENCES} />
           <button
             onClick={fetch_} disabled={loading}
             className="bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition"
@@ -118,7 +111,7 @@ export default function IGScheduler({ theme = 'light' }) {
       </div>
 
       {error && (
-        <div className={`${isDark ? 'bg-red-500/10 border-red-300/30 text-red-200' : 'bg-red-50 border-red-200 text-red-600'} border rounded-xl px-4 py-3 flex items-center gap-2 text-sm`}>
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-red-600">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
         </div>
       )}
@@ -133,12 +126,12 @@ export default function IGScheduler({ theme = 'light' }) {
               { label: 'Avg Score',   val: `${schedule.avg_predicted_engagement?.toFixed(1)}%`, icon: Star, color: 'text-amber-600 bg-amber-50' },
               { label: 'Posts / Week',val: `${schedule.posts_per_week}`, icon: Calendar, color: 'text-blue-600 bg-blue-50' },
             ].map(s => (
-              <div key={s.label} className={`${isDark ? 'bg-[#0b0a2f]/80 border-pink-300/20 shadow-[0_0_16px_rgba(236,72,153,0.14)]' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl p-4 text-center`}>
+              <div key={s.label} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center">
                 <div className={`w-8 h-8 rounded-xl ${s.color} flex items-center justify-center mx-auto mb-2`}>
                   <s.icon className="w-4 h-4" />
                 </div>
-                <p className={`text-2xl font-black ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{s.val}</p>
-                <p className={`text-[11px] mt-0.5 font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{s.label}</p>
+                <p className="text-2xl font-black text-slate-900">{s.val}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5 font-medium">{s.label}</p>
               </div>
             ))}
           </div>
@@ -153,9 +146,7 @@ export default function IGScheduler({ theme = 'light' }) {
                 className={`px-5 py-2 rounded-xl text-sm font-bold border transition-all ${
                   view === v.id
                     ? 'bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-200/40'
-                    : isDark
-                      ? 'bg-[#0b0a2f]/80 text-slate-300 border-pink-300/20 hover:border-pink-300/40 hover:bg-pink-500/10'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-pink-300 hover:bg-pink-50'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-pink-300 hover:bg-pink-50'
                 }`}>
                 {v.label}
               </button>
@@ -164,9 +155,9 @@ export default function IGScheduler({ theme = 'light' }) {
 
           {/* Weekly calendar */}
           {view === 'weekly' && (
-            <div className={`${isDark ? 'bg-[#0b0a2f]/80 border-pink-300/20 shadow-[0_0_18px_rgba(236,72,153,0.12)]' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl overflow-hidden`}>
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className={`font-semibold text-sm ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Optimal {fmt} Posting Schedule</h3>
+                <h3 className="font-semibold text-sm text-slate-800">Optimal {fmt} Posting Schedule</h3>
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-7 gap-2">
@@ -213,21 +204,21 @@ export default function IGScheduler({ theme = 'light' }) {
 
           {/* Best slots ranked list */}
           {view === 'slots' && slots?.length > 0 && (
-            <div className={`${isDark ? 'bg-[#0b0a2f]/80 border-pink-300/20 shadow-[0_0_18px_rgba(236,72,153,0.12)]' : 'bg-white border-slate-200 shadow-md'} border rounded-2xl overflow-hidden`}>
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className={`font-semibold text-sm ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Top 10 Posting Slots</h3>
+                <h3 className="font-semibold text-sm text-slate-800">Top 10 Posting Slots</h3>
               </div>
               <div className="p-4 space-y-2">
                 {slots.map((slot, i) => (
-                  <div key={i} className={`flex items-center gap-4 border rounded-xl px-4 py-3 transition ${isDark ? 'bg-slate-900/50 hover:bg-pink-500/10 border-pink-300/15 hover:border-pink-300/35' : 'bg-slate-50 hover:bg-pink-50/40 border-slate-100 hover:border-pink-200'}`}>
+                  <div key={i} className="flex items-center gap-4 bg-slate-50 hover:bg-pink-50/40 border border-slate-100 hover:border-pink-200 rounded-xl px-4 py-3 transition">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm flex-shrink-0 ${
                       i === 0 ? 'bg-pink-500 text-white shadow-sm shadow-pink-200'
                       : i < 3  ? 'bg-pink-100 text-pink-600'
                       : 'bg-slate-200 text-slate-500'
                     }`}>{i + 1}</div>
                     <div className="w-24 flex-shrink-0">
-                      <p className={`text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{slot.day_name}</p>
-                      <p className={`text-xs font-mono ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{slot.time_ist}</p>
+                      <p className="text-sm font-bold text-slate-800">{slot.day_name}</p>
+                      <p className="text-xs text-slate-400 font-mono">{slot.time_ist}</p>
                     </div>
                     <div className="flex-grow">
                       <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
