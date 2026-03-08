@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Loader2, Zap, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Loader2, Zap, AlertTriangle, Search } from 'lucide-react';
 
 import { LANGUAGES, API_BASE } from './constants/pipeline';
 import { usePipeline } from './hooks/usePipeline';
@@ -71,7 +71,7 @@ export default function App() {
     navigator.clipboard.writeText(toLinkedInText(text));
   };
 
-  const fetchCopilot = async () => {
+  const fetchCopilot = useCallback(async () => {
     setCopilotLoading(true);
     try {
       const response = await fetch(`${API_BASE}/api/copilot`);
@@ -87,42 +87,55 @@ export default function App() {
       setError('Failed to connect to Copilot API');
     }
     setCopilotLoading(false);
-  };
+  }, [setError]);
 
   useEffect(() => {
     if (tab === 'copilot' && !copilotData) fetchCopilot();
-  }, [tab]);
+  }, [tab, copilotData, fetchCopilot]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 font-sans">
-      <Header tab={tab} onTabChange={setTab} />
+    <div className="min-h-screen text-slate-100 font-sans relative overflow-hidden bg-[#030313]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(168,85,247,0.25) 0%, transparent 35%), radial-gradient(circle at 80% 15%, rgba(59,130,246,0.22) 0%, transparent 30%), radial-gradient(circle at 70% 80%, rgba(217,70,239,0.22) 0%, transparent 38%)' }} />
+        <div className="absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.55) 0.8px, transparent 0.8px)', backgroundSize: '3px 3px' }} />
+      </div>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6">
+      {tab === 'copilot' && <Header tab={tab} onTabChange={setTab} />}
+
+      <main className="max-w-[1600px] mx-auto px-4 md:px-6 py-6 relative z-10">
         {/* ═══ CONTENT ENGINE TAB ═══ */}
         {tab === 'generator' && (
-          <div className="space-y-6">
+          <div className="space-y-6 rounded-[22px] border border-indigo-400/45 bg-[#070726]/80 backdrop-blur-xl p-4 md:p-5 shadow-[0_0_40px_rgba(139,92,246,0.28)]">
             {/* Input Bar */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 flex gap-3 items-center">
+            <div className="bg-[#090a31]/80 p-2 rounded-2xl shadow-[0_0_30px_rgba(129,140,248,0.28)] border border-indigo-400/45 flex flex-col md:flex-row gap-2 md:gap-3 items-stretch md:items-center">
+              <button
+                onClick={() => setTab('copilot')}
+                className="hidden md:inline-flex items-center justify-center w-10 h-10 rounded-xl border border-indigo-300/35 bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25"
+                title="Open Growth Copilot"
+              >
+                <Zap className="w-4 h-4" />
+              </button>
               <div className="flex-grow relative">
+                <Search className="w-4 h-4 text-indigo-200/70 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
-                  className="w-full border border-slate-200 p-3.5 pl-4 pr-4 rounded-xl bg-slate-50/50 text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition"
+                  className="w-full border border-indigo-400/50 p-3.5 pl-11 pr-4 rounded-xl bg-[#0a0b3a]/85 text-xl font-medium text-slate-100 placeholder:text-indigo-200/65 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/45 focus:border-fuchsia-300 transition"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g. Why India's SaaS founders are betting big on AI agents"
+                  placeholder="what’s new in AI today?"
                   onKeyDown={(e) => e.key === 'Enter' && !loading && onGenerate()}
                 />
               </div>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="border border-slate-200 p-3.5 rounded-xl bg-slate-50/50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition min-w-[120px]"
+                className="border border-indigo-400/45 p-3.5 rounded-xl bg-[#0a0b3a]/85 text-lg font-medium text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/40 focus:border-fuchsia-300 transition min-w-[140px]"
               >
                 {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
               </select>
               <button
                 onClick={onGenerate}
                 disabled={loading || !topic.trim()}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-slate-300 disabled:to-slate-400 text-white px-7 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 shadow-md shadow-indigo-200/50 disabled:shadow-none"
+                className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 disabled:from-slate-500 disabled:to-slate-600 text-white px-7 py-3.5 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(217,70,239,0.55)] disabled:shadow-none"
               >
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Orchestrating...</> : <><Zap className="w-4 h-4" /> Orchestrate Content</>}
               </button>
@@ -130,18 +143,18 @@ export default function App() {
 
             {/* Error Banner */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="bg-red-500/10 border border-red-300/40 rounded-2xl p-5 flex items-start gap-3 backdrop-blur-sm">
+                <AlertTriangle className="w-5 h-5 text-red-300 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-red-800">Pipeline Error</p>
-                  <p className="text-sm text-red-600 mt-1">{error}</p>
+                  <p className="text-sm font-semibold text-red-200">Pipeline Error</p>
+                  <p className="text-sm text-red-100/90 mt-1">{error}</p>
                 </div>
               </div>
             )}
 
             {/* Three-Column Layout */}
             {(loading || result) && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 <AgentWorkflow
                   loading={loading} result={result}
                   currentIteration={currentIteration} reflexionHistory={reflexionHistory}
@@ -159,12 +172,12 @@ export default function App() {
 
             {/* Empty State */}
             {!loading && !result && (
-              <div className="text-center py-20">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 mb-6">
-                  <Zap className="w-10 h-10 text-indigo-600" />
+              <div className="text-center py-16 md:py-20 rounded-2xl border border-indigo-400/30 bg-slate-950/40">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/30 to-fuchsia-500/30 mb-6 border border-indigo-300/50 shadow-[0_0_20px_rgba(129,140,248,0.45)]">
+                  <Zap className="w-10 h-10 text-indigo-200" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Multi-Agent Content Orchestration</h2>
-                <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                <h2 className="text-3xl font-bold text-white mb-2">Multi-Agent Content Orchestration</h2>
+                <p className="text-sm text-indigo-100/80 max-w-xl mx-auto leading-relaxed">
                   Enter a topic above. Our 7-agent LangGraph pipeline will draft, localize, critique,
                   score, and optimize your LinkedIn post — all powered by Claude on AWS Bedrock.
                 </p>
@@ -187,7 +200,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200/60 mt-12 py-4 text-center text-xs text-slate-400">
+      <footer className="border-t border-indigo-400/20 mt-12 py-4 text-center text-xs text-indigo-100/60 relative z-10">
         Content Engine • Multi-Agent Content Engine • Powered by AWS Bedrock + LangGraph
       </footer>
     </div>

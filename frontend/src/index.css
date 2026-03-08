@@ -17,3 +17,40 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+@keyframes neonCyan {
+  0%, 100% {
+    box-shadow: 0 0 22px rgba(0, 229, 255, 0.35), 0 0 52px rgba(0, 229, 255, 0.12), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 34px rgba(0, 229, 255, 0.58), 0 0 70px rgba(0, 229, 255, 0.2), inset 0 0 24px rgba(0, 229, 255, 0.08);
+  }
+}
+
+@keyframes neonPurple {
+  0%, 100% {
+    box-shadow: 0 0 22px rgba(168, 85, 247, 0.4), 0 0 56px rgba(168, 85, 247, 0.14), inset 0 0 16px rgba(168, 85, 247, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 36px rgba(168, 85, 247, 0.65), 0 0 82px rgba(168, 85, 247, 0.24), inset 0 0 26px rgba(168, 85, 247, 0.1);
+  }
+}
+
+@keyframes neonPink {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(240, 171, 252, 0.36), 0 0 52px rgba(240, 171, 252, 0.14), inset 0 0 14px rgba(240, 171, 252, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 34px rgba(240, 171, 252, 0.62), 0 0 78px rgba(240, 171, 252, 0.22), inset 0 0 24px rgba(240, 171, 252, 0.08);
+  }
+}
+
+@keyframes stepPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.96); opacity: 0.78; }
+}
+
+.panel-glow-cyan { animation: neonCyan 3s ease-in-out infinite; }
+.panel-glow-purple { animation: neonPurple 3s ease-in-out infinite .4s; }
+.panel-glow-pink { animation: neonPink 3s ease-in-out infinite .8s; }
+.step-pulse { animation: stepPulse 1s ease-in-out infinite; }
