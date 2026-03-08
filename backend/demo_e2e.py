@@ -4,7 +4,7 @@ Runs all components and prints results step by step.
 """
 import sys, json, time, textwrap
 from ml_model import post_predictor, trend_predictor, extract_post_features
-from agent_graph import app_graph
+from agent_graph import app_graph, PostState
 from copilot import analyze_growth_data
 
 LINE = "=" * 70
@@ -79,7 +79,7 @@ print(f"\n🎯 Topic  : {topic}")
 print(f"🌐 Language: {lang}")
 print(f"\n⏳ Running pipeline (drafting → localization → critique → scoring → [reflexion loop?] → visuals)...\n")
 
-initial_state = {"topic": topic, "target_language": lang, "iteration": 0}
+initial_state: PostState = {"topic": topic, "target_language": lang, "iteration": 0}
 final_state = {}
 node_order = []
 

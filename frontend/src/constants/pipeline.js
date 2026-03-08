@@ -1,4 +1,5 @@
 import { Sparkles, Search, Zap, Globe2, Shield, AlertTriangle, BarChart3, Eye } from 'lucide-react';
+export { API_BASE } from './api';
 
 export const PIPELINE_STEPS = [
   { id: 'drafting',      label: 'Content Drafter',       icon: Sparkles,      desc: 'Generating concise English draft...' },
@@ -11,8 +12,6 @@ export const PIPELINE_STEPS = [
   { id: 'scoring',       label: 'Hybrid Scoring Engine', icon: BarChart3,     desc: 'Computing engagement prediction...' },
   { id: 'visuals',       label: 'Visual Strategist',     icon: Eye,           desc: 'Crafting image generation prompt...' },
 ];
-
-export const API_BASE = 'http://localhost:8000';
 
 export const LANGUAGES = ['Hindi', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'Kannada', 'English'];
 

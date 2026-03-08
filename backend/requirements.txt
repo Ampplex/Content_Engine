@@ -11,3 +11,7 @@ python-dotenv
 requests
 duckduckgo-search
 google-generativeai
+# -- New dependencies ----------------------------------
+httpx           # async HTTP client (for future async bedrock calls)
+tzdata          # zoneinfo timezone data (needed for IST on some systems)
+boto3
