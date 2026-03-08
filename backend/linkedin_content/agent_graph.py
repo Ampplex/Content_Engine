@@ -683,7 +683,7 @@ workflow.add_node("localization",         indic_localization_agent)
 workflow.add_node("critique",             multi_agent_critique)
 workflow.add_node("scoring",              hybrid_scoring_engine)
 workflow.add_node("visuals",              visual_strategy_agent)
-workflow.add_node("ab_variants",          ab_variants_generator)       # ← NEW
+workflow.add_node("ab_variants_node",     ab_variants_generator)       # ← NEW
 
 workflow.set_entry_point("drafting")
 workflow.add_edge("drafting",            "competitor_analysis")        # ← runs right after draft
@@ -703,7 +703,7 @@ def reflexion_router(state: PostState):
     return "visuals"
 
 workflow.add_conditional_edges("scoring", reflexion_router)
-workflow.add_edge("visuals", "ab_variants")                            # ← ab_variants runs after visuals
-workflow.add_edge("ab_variants", END)
+workflow.add_edge("visuals", "ab_variants_node")                       # ← ab_variants runs after visuals
+workflow.add_edge("ab_variants_node", END)
 
 app_graph = workflow.compile()

@@ -53,9 +53,9 @@ NODE_TO_STEP = {
     "trend_search":        2,
     "caption_drafter":     3,
     "hook_gen":            4,
-    "hashtags":            5,
-    "reel_script":         5,
-    "carousel":            5,
+    "hashtag_gen":         5,
+    "reel_script_gen":     5,
+    "carousel_gen":        5,
     "critique":            6,
     "scoring":             7,
     "visuals":             8,
@@ -177,7 +177,7 @@ async def ig_generate(req: IGGenerateRequest):
                     yield _sse("hook", {"hook": node_data["hook"]})
 
                 # Hashtags
-                if node_name == "hashtags":
+                if node_name == "hashtag_gen":
                     yield _sse("hashtags", {"hashtags": node_data.get("hashtags", {})})
 
                 # Critiques
@@ -285,7 +285,7 @@ async def ig_generate(req: IGGenerateRequest):
                 if node_name == "hook_gen" and node_data.get("hook"):
                     yield _sse("hook", {"hook": node_data["hook"]})
 
-                if node_name == "hashtags":
+                if node_name == "hashtag_gen":
                     yield _sse("hashtags", {"hashtags": node_data.get("hashtags", {})})
 
                 if node_name == "critique":
@@ -377,7 +377,7 @@ async def ig_refine(req: IGRefineRequest):
                     yield _sse("node_done", {"step": step, "node": node_name})
                 if node_name == "hook_gen" and node_data.get("hook"):
                     yield _sse("hook", {"hook": node_data["hook"]})
-                if node_name == "hashtags":
+                if node_name == "hashtag_gen":
                     yield _sse("hashtags", {"hashtags": node_data.get("hashtags", {})})
                 if node_name == "critique":
                     yield _sse("critiques", {"critiques": node_data.get("agent_critiques", [])})
