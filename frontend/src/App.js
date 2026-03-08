@@ -399,7 +399,7 @@ export default function App() {
       <footer className="border-t border-slate-200/60 mt-12 py-4 text-center text-xs text-slate-400">
         {isIG
           ? 'Instagram Engine | 9-agent pipeline | AWS Bedrock'
-          : 'Content Engine | Multi-agent pipeline | AWS Bedrock + LangGraph'}
+          : 'LinkedIn Engine | Multi-agent pipeline | AWS Bedrock + LangGraph'}
       </footer>
     </div>
   );

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Activity, BrainCircuit, LineChart, Instagram, TrendingUp, Calendar, Crosshair } from 'lucide-react';
+import { Linkedin, BrainCircuit, LineChart, Instagram, TrendingUp, Calendar, Crosshair } from 'lucide-react';
 
 const LI_TABS = [
-  { id: 'generator', label: 'Content Engine', icon: BrainCircuit },
+  { id: 'generator', label: 'LinkedIn Engine', icon: BrainCircuit },
   { id: 'copilot', label: 'Growth Copilot', icon: LineChart },
 ];
 
@@ -23,11 +23,11 @@ export default function Header({ tab, onTabChange, platform, onPlatformChange })
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-9 h-9 rounded-xl ${accent} flex items-center justify-center flex-shrink-0`}>
-            {isIG ? <Instagram className="text-white w-5 h-5" /> : <Activity className="text-white w-5 h-5" />}
+            {isIG ? <Instagram className="text-white w-5 h-5" /> : <Linkedin className="text-white w-5 h-5" />}
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-bold tracking-tight leading-tight truncate">
-              {isIG ? 'Instagram Engine' : 'Content Engine'}
+              {isIG ? 'Instagram Engine' : 'LinkedIn Engine'}
             </h1>
             <p className="text-[10px] text-slate-400 font-medium -mt-0.5 truncate">
               {isIG ? 'AI for Indian Creators' : 'AI for Bharat | LinkedIn'}
@@ -45,7 +45,7 @@ export default function Header({ tab, onTabChange, platform, onPlatformChange })
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <Activity className="w-3.5 h-3.5" /> LinkedIn
+              <Linkedin className="w-3.5 h-3.5" /> LinkedIn
             </button>
             <button
               onClick={() => onPlatformChange('instagram')}
