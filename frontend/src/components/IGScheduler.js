@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import {
-  Calendar, Clock, Loader2, Zap, Star, ChevronDown, AlertCircle,
-} from 'lucide-react';
+import { Calendar, Clock, Loader2, Zap, Star, ChevronDown, AlertCircle } from 'lucide-react';
 import { IG_API_BASE, IG_FORMATS, IG_TONES, IG_AUDIENCES } from '../constants/ig_pipeline';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const CONFIDENCE_STYLE = {
-  '🔥 Prime':   'bg-orange-50 border-orange-200 text-orange-700',
-  '✅ Great':   'bg-emerald-50 border-emerald-200 text-emerald-700',
-  '👍 Good':    'bg-blue-50 border-blue-200 text-blue-700',
-  '⚠️ Average': 'bg-amber-50 border-amber-200 text-amber-600',
-};
+function confidenceClass(label = '') {
+  const text = label.toLowerCase();
+  if (text.includes('prime')) return 'bg-orange-50 border-orange-200 text-orange-700';
+  if (text.includes('great')) return 'bg-emerald-50 border-emerald-200 text-emerald-700';
+  if (text.includes('good')) return 'bg-blue-50 border-blue-200 text-blue-700';
+  return 'bg-amber-50 border-amber-200 text-amber-600';
+}
 
 function SelectField({ label, value, onChange, options }) {
   return (
@@ -19,10 +18,11 @@ function SelectField({ label, value, onChange, options }) {
       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
       <div className="relative">
         <select
-          value={value} onChange={e => onChange(e.target.value)}
-          className="w-full appearance-none border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold bg-slate-50 focus:outline-none focus:ring-2 focus:ring-pink-400/30 focus:border-pink-400 pr-8 transition"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="ui-control w-full appearance-none pr-8 focus:ring-pink-400/30 focus:border-pink-400"
         >
-          {options.map(o => <option key={o}>{o}</option>)}
+          {options.map((o) => <option key={o}>{o}</option>)}
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
       </div>
@@ -31,48 +31,55 @@ function SelectField({ label, value, onChange, options }) {
 }
 
 export default function IGScheduler() {
-  const [fmt,      setFmt]      = useState('Reel');
-  const [tone,     setTone]     = useState('Educational');
+  const [fmt, setFmt] = useState('Reel');
+  const [tone, setTone] = useState('Educational');
   const [audience, setAudience] = useState('Gen Z');
-  const [ppw,      setPpw]      = useState(5);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [ppw, setPpw] = useState(5);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [schedule, setSchedule] = useState(null);
-  const [slots,    setSlots]    = useState(null);
-  const [view,     setView]     = useState('weekly');
+  const [slots, setSlots] = useState(null);
+  const [view, setView] = useState('weekly');
 
-  const fetch_ = async () => {
-    setLoading(true); setError('');
+  const fetchSchedule = async () => {
+    setLoading(true);
+    setError('');
     try {
       const [schR, slotR] = await Promise.all([
         fetch(`${IG_API_BASE}/api/ig/schedule`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ format: fmt, tone, audience, posts_per_week: ppw }),
         }),
         fetch(`${IG_API_BASE}/api/ig/schedule/best-slots?format=${fmt}&tone=${tone}&audience=${audience}&top_n=10`),
       ]);
-      const schData  = await schR.json();
+
+      const schData = await schR.json();
       const slotData = await slotR.json();
       if (schData.error) setError(schData.error);
-      else { setSchedule(schData); setSlots(slotData?.slots || []); }
-    } catch { setError('Instagram API unreachable (check backend/main.py on 8000).'); }
+      else {
+        setSchedule(schData);
+        setSlots(slotData?.slots || []);
+      }
+    } catch {
+      setError('Instagram API unreachable. Start backend/main.py on :8000 and retry.');
+    }
     setLoading(false);
   };
 
-  const scheduledDays = new Set((schedule?.schedule || []).map(s => s.day));
+  const scheduledDays = new Set((schedule?.schedule || []).map((s) => s.day));
 
   return (
     <div className="space-y-5">
-      {/* Hero */}
-      <div className="bg-white text-slate-900 rounded-2xl p-7 border border-slate-200 shadow-sm">
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="ui-card p-7">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-xl font-black">Instagram Scheduler</h2>
-              <p className="text-slate-500 text-sm mt-0.5">LightGBM model · IST timezone · Indian audience</p>
+              <p className="text-slate-500 text-sm mt-0.5">LightGBM model | IST timezone | Indian audience</p>
             </div>
           </div>
           {schedule && (
@@ -85,25 +92,27 @@ export default function IGScheduler() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+      <div className="ui-card p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
-          <SelectField label="Format"   value={fmt}      onChange={setFmt}      options={IG_FORMATS} />
-          <SelectField label="Tone"     value={tone}     onChange={setTone}     options={IG_TONES} />
+          <SelectField label="Format" value={fmt} onChange={setFmt} options={IG_FORMATS} />
+          <SelectField label="Tone" value={tone} onChange={setTone} options={IG_TONES} />
           <SelectField label="Audience" value={audience} onChange={setAudience} options={IG_AUDIENCES} />
-          <button
-            onClick={fetch_} disabled={loading}
-            className="bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition"
-          >
+          <button onClick={fetchSchedule} disabled={loading} className="ui-btn-instagram py-3">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            {loading ? 'Computing…' : 'Get Schedule'}
+            {loading ? 'Generating...' : 'Generate Schedule'}
           </button>
         </div>
+
         <div className="mt-4 flex items-center gap-3">
           <label className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">Posts/week:</label>
-          {[3, 4, 5, 6, 7].map(n => (
-            <button key={n} onClick={() => setPpw(n)}
-              className={`w-9 h-9 rounded-lg font-bold text-sm transition ${ppw === n ? 'bg-pink-500 text-white shadow-sm shadow-pink-200' : 'bg-slate-100 text-slate-600 hover:bg-pink-50'}`}>
+          {[3, 4, 5, 6, 7].map((n) => (
+            <button
+              key={n}
+              onClick={() => setPpw(n)}
+              className={`w-9 h-9 rounded-lg font-bold text-sm transition ${
+                ppw === n ? 'bg-pink-500 text-white shadow-sm shadow-pink-200' : 'bg-slate-100 text-slate-600 hover:bg-pink-50'
+              }`}
+            >
               {n}
             </button>
           ))}
@@ -111,22 +120,22 @@ export default function IGScheduler() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+        <div className="ui-alert-error flex items-center gap-2 text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
         </div>
       )}
 
       {schedule && !loading && (
         <>
-          {/* Stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Best Day',    val: schedule.best_day,   icon: Calendar, color: 'text-pink-600 bg-pink-50' },
-              { label: 'Best Time',   val: schedule.best_time,  icon: Clock,    color: 'text-rose-600 bg-rose-50' },
-              { label: 'Avg Score',   val: `${schedule.avg_predicted_engagement?.toFixed(1)}%`, icon: Star, color: 'text-amber-600 bg-amber-50' },
-              { label: 'Posts / Week',val: `${schedule.posts_per_week}`, icon: Calendar, color: 'text-blue-600 bg-blue-50' },
-            ].map(s => (
-              <div key={s.label} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center">
+              { label: 'Best Day', val: schedule.best_day, icon: Calendar, color: 'text-pink-600 bg-pink-50' },
+              { label: 'Best Time', val: schedule.best_time, icon: Clock, color: 'text-rose-600 bg-rose-50' },
+              { label: 'Avg Score', val: `${schedule.avg_predicted_engagement?.toFixed(1)}%`, icon: Star, color: 'text-amber-600 bg-amber-50' },
+              { label: 'Posts / Week', val: `${schedule.posts_per_week}`, icon: Calendar, color: 'text-blue-600 bg-blue-50' },
+            ].map((s) => (
+              <div key={s.label} className="ui-card p-4 text-center">
                 <div className={`w-8 h-8 rounded-xl ${s.color} flex items-center justify-center mx-auto mb-2`}>
                   <s.icon className="w-4 h-4" />
                 </div>
@@ -136,40 +145,44 @@ export default function IGScheduler() {
             ))}
           </div>
 
-          {/* View toggle */}
           <div className="flex gap-2">
             {[
-              { id: 'weekly', label: '📅 Weekly Plan' },
-              { id: 'slots',  label: '🏆 Best Slots' },
-            ].map(v => (
-              <button key={v.id} onClick={() => setView(v.id)}
+              { id: 'weekly', label: 'Weekly Plan' },
+              { id: 'slots', label: 'Best Slots' },
+            ].map((v) => (
+              <button
+                key={v.id}
+                onClick={() => setView(v.id)}
                 className={`px-5 py-2 rounded-xl text-sm font-bold border transition-all ${
                   view === v.id
                     ? 'bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-200/40'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-pink-300 hover:bg-pink-50'
-                }`}>
+                }`}
+              >
                 {v.label}
               </button>
             ))}
           </div>
 
-          {/* Weekly calendar */}
           {view === 'weekly' && (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100">
+            <div className="ui-card overflow-hidden">
+              <div className="ui-card-header">
                 <h3 className="font-semibold text-sm text-slate-800">Optimal {fmt} Posting Schedule</h3>
               </div>
               <div className="p-5">
                 <div className="grid grid-cols-7 gap-2">
                   {DAYS.map((day, i) => {
-                    const slot   = schedule.schedule.find(s => s.day === i);
+                    const slot = schedule.schedule.find((s) => s.day === i);
                     const isSched = scheduledDays.has(i);
                     return (
-                      <div key={day} className={`rounded-2xl p-3 text-center border-2 transition-all ${
-                        isSched
-                          ? 'border-pink-400 bg-gradient-to-b from-pink-50 to-rose-50 shadow-md shadow-pink-100'
-                          : 'border-slate-100 bg-slate-50/50 opacity-40'
-                      }`}>
+                      <div
+                        key={day}
+                        className={`rounded-2xl p-3 text-center border-2 transition-all ${
+                          isSched
+                            ? 'border-pink-400 bg-gradient-to-b from-pink-50 to-rose-50 shadow-md shadow-pink-100'
+                            : 'border-slate-100 bg-slate-50/50 opacity-40'
+                        }`}
+                      >
                         <p className={`text-xs font-bold mb-1 ${isSched ? 'text-pink-700' : 'text-slate-400'}`}>{day}</p>
                         {isSched && slot ? (
                           <>
@@ -178,11 +191,13 @@ export default function IGScheduler() {
                               <p className="text-xs font-black text-slate-800">{slot.time_ist}</p>
                             </div>
                             <p className="text-lg font-black text-pink-600 mt-0.5">{slot.predicted_engagement?.toFixed(1)}%</p>
-                            <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border mt-1 ${CONFIDENCE_STYLE[slot.confidence_label] || 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                            <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border mt-1 ${confidenceClass(slot.confidence_label)}`}>
                               {slot.confidence_label}
                             </div>
                           </>
-                        ) : <p className="text-[10px] text-slate-300 mt-2">–</p>}
+                        ) : (
+                          <p className="text-[10px] text-slate-300 mt-2">-</p>
+                        )}
                       </div>
                     );
                   })}
@@ -202,19 +217,16 @@ export default function IGScheduler() {
             </div>
           )}
 
-          {/* Best slots ranked list */}
           {view === 'slots' && slots?.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100">
+            <div className="ui-card overflow-hidden">
+              <div className="ui-card-header">
                 <h3 className="font-semibold text-sm text-slate-800">Top 10 Posting Slots</h3>
               </div>
               <div className="p-4 space-y-2">
                 {slots.map((slot, i) => (
                   <div key={i} className="flex items-center gap-4 bg-slate-50 hover:bg-pink-50/40 border border-slate-100 hover:border-pink-200 rounded-xl px-4 py-3 transition">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm flex-shrink-0 ${
-                      i === 0 ? 'bg-pink-500 text-white shadow-sm shadow-pink-200'
-                      : i < 3  ? 'bg-pink-100 text-pink-600'
-                      : 'bg-slate-200 text-slate-500'
+                      i === 0 ? 'bg-pink-500 text-white shadow-sm shadow-pink-200' : i < 3 ? 'bg-pink-100 text-pink-600' : 'bg-slate-200 text-slate-500'
                     }`}>{i + 1}</div>
                     <div className="w-24 flex-shrink-0">
                       <p className="text-sm font-bold text-slate-800">{slot.day_name}</p>
@@ -222,8 +234,7 @@ export default function IGScheduler() {
                     </div>
                     <div className="flex-grow">
                       <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-400 transition-all duration-700"
-                          style={{ width: `${(slot.predicted_engagement / 10) * 100}%` }} />
+                        <div className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-400 transition-all duration-700" style={{ width: `${(slot.predicted_engagement / 10) * 100}%` }} />
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 w-20">
@@ -241,7 +252,7 @@ export default function IGScheduler() {
       {!schedule && !loading && (
         <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-16 text-center">
           <Calendar className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-400">Select your format + audience and get your optimal Instagram schedule</p>
+          <p className="text-sm font-semibold text-slate-400">Select format and audience to generate your optimal Instagram schedule</p>
         </div>
       )}
     </div>

@@ -62,7 +62,7 @@ export default function IGCompetitor() {
       const json = await res.json();
       if (json.error) setError(json.error);
       else setData(json);
-    } catch { setError('Instagram API unreachable (check backend/main.py on 8000).'); }
+    } catch { setError('Instagram API unreachable. Start backend/main.py on :8000 and retry.'); }
     setLoading(false);
   };
 
@@ -88,20 +88,20 @@ export default function IGCompetitor() {
           <input
             value={topic} onChange={e => setTopic(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !loading && analyze()}
-            placeholder="e.g. fitness for Indian college students, personal finance Gen Z India…"
+            placeholder="e.g. fitness for Indian college students, personal finance Gen Z India..."
             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/30 focus:border-fuchsia-400 transition"
           />
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-500 font-semibold cursor-pointer mb-0.5 whitespace-nowrap">
-          <input type="checkbox" checked={enrich} onChange={e => setEnrich(e.target.checked)} className="w-4 h-4 accent-fuchsia-600" />
+          <input type="checkbox" checked={enrich} onChange={e => setEnrich(e.target.checked)} className="w-4 h-4 accent-fuchsia-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2" />
           Enrich hashtags
         </label>
         <button
           onClick={analyze} disabled={loading || !topic.trim()}
-          className="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition whitespace-nowrap"
+          className="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:bg-slate-300 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-2"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          {loading ? 'Analyzing…' : 'Analyze Niche'}
+          {loading ? 'Analyzing...' : 'Analyze Niche'}
         </button>
       </div>
 
@@ -162,7 +162,7 @@ export default function IGCompetitor() {
                   }}
                   className="text-xs text-fuchsia-600 border border-fuchsia-200 px-3 py-1 rounded-lg hover:bg-fuchsia-50 font-semibold transition"
                 >
-                  {hashCopy ? '✓ Copied!' : 'Copy All'}
+                  {hashCopy ? 'Copied!' : 'Copy All'}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
