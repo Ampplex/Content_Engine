@@ -1,17 +1,19 @@
 fastapi
 uvicorn
 pydantic
-langchain-openai
-langgraph
-pandas
-scikit-learn
-lightgbm
-numpy
 python-dotenv
 requests
-duckduckgo-search
+httpx
+
+langgraph
+langchain-openai
 google-generativeai
-# -- New dependencies ----------------------------------
-httpx           # async HTTP client (for future async bedrock calls)
-tzdata          # zoneinfo timezone data (needed for IST on some systems)
+
+pandas
+numpy
+scikit-learn
+lightgbm
+
 boto3
+duckduckgo-search
+tzdata
