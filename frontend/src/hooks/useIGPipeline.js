@@ -66,7 +66,14 @@ export function useIGPipeline() {
               setSelectedTone(data.tone || selectedTone);
               if (data.hashtags) setHashtags(data.hashtags);
               setActiveStep(IG_PIPELINE_STEPS.length);
-              setCompletedSteps(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]));
+              // Only mark all steps as done if caption or image_url is present and non-empty
+              const hasFinal = (typeof data.caption === 'string' && data.caption.trim().length > 0)
+                || (typeof data.image_url === 'string' && data.image_url.trim().length > 0);
+              if (hasFinal) {
+                setCompletedSteps(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]));
+              } else {
+                setError('Pipeline completed but no caption or image was generated. Please try again or check backend logs.');
+              }
             }
 
             if (eventType === 'error') {

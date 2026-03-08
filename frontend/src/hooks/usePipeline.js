@@ -61,7 +61,14 @@ export function usePipeline() {
             if (eventType === 'complete') {
               setResult(data);
               setActiveStep(PIPELINE_STEPS.length);
-              setCompletedSteps(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]));
+              // Only mark all steps as done if final_post or caption is present and non-empty
+              const hasFinal = (typeof data.final_post === 'string' && data.final_post.trim().length > 0)
+                || (typeof data.caption === 'string' && data.caption.trim().length > 0);
+              if (hasFinal) {
+                setCompletedSteps(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]));
+              } else {
+                setError('Pipeline completed but no final post/caption was generated. Please try again or check backend logs.');
+              }
               if (data.search_queries) {
                 setSearchData((prev) => prev || {
                   queries: data.search_queries,
