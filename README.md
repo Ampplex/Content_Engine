@@ -184,6 +184,7 @@ hybrid-os-prototype/
 - For custom workflows, modify or extend the agent logic in the backend or add new UI panels in the frontend.
 
 
+
 ## Key Features
 
 - **Agent-based Content Generation:** Modular agents for Instagram and LinkedIn automate captions, hashtags, carousel/reel scripts, and more.
@@ -192,6 +193,57 @@ hybrid-os-prototype/
 - **Competitor Analysis:** Tools for analyzing and benchmarking against competitors' content and strategies.
 - **Web Search & Image Generation:** Integrates web search for inspiration and generates images for posts.
 - **Modern UI:** Intuitive, responsive frontend for managing workflows, reviewing content, and visualizing scores.
+
+## Scoring Formulas
+
+The backend uses machine learning models and heuristic formulas to score content for quality, engagement, and relevance. These scores help users optimize their posts for better performance. Below are example formulas and explanations used in the scoring process:
+
+### 1. Engagement Score
+Measures the likelihood of a post to generate user engagement (likes, comments, shares):
+
+$$
+	ext{Engagement Score} = w_1 \cdot \text{Hashtag Score} + w_2 \cdot \text{Caption Quality} + w_3 \cdot \text{Image Quality} + w_4 \cdot \text{Competitor Benchmark}
+$$
+
+Where $w_1, w_2, w_3, w_4$ are weights (typically summing to 1) tuned by the ML model or set heuristically.
+
+### 2. Hashtag Score
+Evaluates the effectiveness and relevance of hashtags:
+
+$$
+	ext{Hashtag Score} = \frac{\sum_{i=1}^N \text{Popularity}(h_i) \times \text{Relevance}(h_i)}{N}
+$$
+
+Where $h_i$ is the $i$-th hashtag, $N$ is the total number of hashtags, and Popularity/Relevance are normalized between 0 and 1.
+
+### 3. Caption Quality
+Assesses readability, sentiment, and call-to-action presence:
+
+$$
+	ext{Caption Quality} = 0.4 \cdot \text{Readability} + 0.3 \cdot \text{Sentiment} + 0.3 \cdot \text{CallToAction}
+$$
+
+Where each component is scored between 0 and 1.
+
+### 4. Competitor Benchmark
+Compares the post to top-performing competitor content:
+
+$$
+	ext{Competitor Benchmark} = \frac{\text{Your Score}}{\text{Average Competitor Score}}
+$$
+
+Values above 1 indicate your content is likely to outperform competitors.
+
+### 5. Final Content Score
+The overall score is a weighted sum of the above components, possibly with additional ML-based adjustments:
+
+$$
+	ext{Final Score} = \alpha \cdot \text{Engagement Score} + (1-\alpha) \cdot \text{Other Factors}
+$$
+
+Where $\alpha$ is a tunable parameter (e.g., 0.7).
+
+**Note:** Actual weights and formulas may be dynamically adjusted by the ML models based on training data and platform-specific requirements.
 
 
 ## Contributing
